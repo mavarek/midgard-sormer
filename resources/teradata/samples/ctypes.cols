@@ -1,0 +1,14 @@
+HEADER
+COLUMN|PP_SCRATCH|lc_ctypes||c_bigint|-(19)9|I8|8|||Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_byte|X(2)|BF|1|||Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_byteint|-(3)9|I1|1|||Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_char|X(10)|CF|10|||Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_date|YY/MM/DD|DA|4|||Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_decimal|---------------.9999|D|8|18|4|Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_float|-9.99999999999999E-999|F|8|||Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_integer|-(10)9|I|4|||Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_smallint|-(5)9|I2|2|||Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_time|HH.MI.SS|AT|8||0|Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_timestamp|YYYY-MM-DDBHH:MI:SS|TS|19||0|Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_varbyte|X(20)|BV|10|||Y
+COLUMN|PP_SCRATCH|lc_ctypes||c_varchar|X(10)|CV|10|||Y
