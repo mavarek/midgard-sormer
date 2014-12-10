@@ -7,12 +7,14 @@ sys.path.append(sys.path[0] + "/modules")
 
 from informatica import *
 
-if len(sys.argv) < 3:
+if len(sys.argv) < 5:
     print("invalid input")
     exit()
 
-inputFile = sys.argv[1]
-keysList = sys.argv[2:]
+table_name = sys.argv[1]
+radd_name = sys.argv[2]
+inputFile = sys.argv[3]
+keysList = sys.argv[4:]
 #outputFile = sys.argv[2]
 
 try:
@@ -22,11 +24,7 @@ except IOError:
     exit()
 else:
     # build source
-    #elSource = ET.Element("Source")
-    #elSource.attrib["DATABASETYPE"] = "Teradata"
-    #elSource.attrib["DBDNAME"] = "Mozart"
-    #elSource.attrib["NAME"] = "lc_ctypes"
-    source = infaTransform(NAME = "lc_ctypes", TYPE = "Source Definition")
+    source = infaTransform(NAME = table_name, TYPE = "Source Definition")
     source.properties["DATABASETYPE"] = "Teradata"
     source.properties["DBDNAME"] = "Mozart"
 
@@ -56,17 +54,35 @@ else:
             source.columns_list.append(infa_src_col)
 
     # source qualifier
-    src_qual = infaTransform(NAME = "SQ_lc_ctypes", TYPE = "Source Qualifier")
+    src_qual = infaTransform(NAME = "SQ_" + table_name, TYPE = "Source Qualifier")
     src_qual.properties["ASSOCIATED_SOURCE_INSTANCE_NAME"] = source.NAME
     for col in source.columns_list:
         sq_col = col.toSourceQualifier()
         src_qual.columns_list.append(sq_col)
-    src_qual.properties["Sql Query"] = "select * from lc_ctypes"
+
+    # build select query
+    sel_query = "SELECT"
+    for idx, col in enumerate(source.columns_list):
+        if col.DATATYPE.upper() == "CHAR":
+            sel_query += " TRIM(CAST(" + col.NAME + " AS VARCHAR(" \
+                + col.PRECISION + ")))"
+        elif col.DATATYPE.upper() == "DECIMAL" and col.PRECISION > 18:
+            sel_query += " CAST(CAST(" + col.NAME + " AS DECIMAL(38, " + \
+                col.SCALE + ") FORMAT '--(37)9') AS VARCHAR(38))"
+        else:
+            sel_query += " " + col.NAME
+
+        if idx < (len(source.columns_list) - 1):
+            sel_query += ","
+
+    sel_query += " FROM pp_risk_ops_views." + table_name
+        
+    src_qual.properties["Sql Query"] = sel_query
 
     # exp transform
     exp = infaTransform(NAME = "exp_composite_keys", TYPE = "Expression")
     composite_col = infaColumn(TRANSFORMATIONTYPE = "Expression")
-    composite_col.DATATYPE = "STRING"
+    composite_col.DATATYPE = "string"
     composite_col.NAME="composite_keys"
     composite_col.PORTTYPE = "OUTPUT"
     composite_col.PRECISION = "0"
@@ -102,13 +118,22 @@ else:
     else:
         composite_var = "i_" + composite_var
     composite_col.properties["EXPRESSION"] += composite_var
-
     exp.columns_list.insert(len(src_qual.columns_list), composite_col)
+
+    date_updated = infaColumn(TRANSFORMATIONTYPE = "Expression")
+    date_updated.NAME = "date_updated"
+    date_updated.DATATYPE = "string"
+    date_updated.PORTTYPE = "OUTPUT"
+    date_updated.PRECISION = "10"
+    date_updated.SCALE = "0"
+    date_updated.properties["EXPRESSION"] = \
+        "TO_CHAR(SESSSTARTTIME, 'YYYY-MM-DD')"
+    exp.columns_list.append(date_updated)
 
     #print(xml.dom.minidom.parseString(ET.tostring(exp.getElement())).toprettyxml())
 
     # target
-    tgt = infaTransform(NAME = "lc_ctypes", TYPE = "Target Definition")
+    tgt = infaTransform(NAME = table_name, TYPE = "Target Definition")
     tgt.properties["DATABASETYPE"] = "Flat File"
     tgt.properties["CODEPAGE"] = "UTF-8"
     tgt.properties["DELIMITED"] = "YES"
@@ -123,7 +148,7 @@ else:
 
     # build mapping
     mapping = ET.Element("MAPPING")
-    mapping.set("NAME", "m_lc_ctypes_RADD")
+    mapping.set("NAME", "m_" + radd_name)
     ins_src = source.getInstance()
     ins_src.NAME = "src_" + source.NAME
     #print(xml.dom.minidom.parseString(ET.tostring(ins_src.getElement())).toprettyxml())
@@ -177,7 +202,7 @@ else:
 
     # build workflow
     workflow = ET.Element("WORKFLOW")
-    workflow.set("NAME", "wf_lc_ctypes_RADD")
+    workflow.set("NAME", "wf_" + radd_name)
     workflow.set("REUSABLE_SCHEDULER", "NO")
     workflow.set("SCHEDULERNAME", "Scheduler")
 
@@ -235,28 +260,29 @@ else:
     sess_extn.set("SINSTANCENAME", ins_sq.infaMapObj.NAME)
     sess_extn.set("SUBTYPE", "Teradata FastExport Reader")
     sess_extn.set("TRANSFORMATIONTYPE", ins_sq.infaMapObj.TYPE)
-    sess_extn.set("TYPE", "Writer")
+    sess_extn.set("TYPE", "READER")
     conn_ref = ET.SubElement(sess_extn, "CONNECTIONREFERENCE")
     conn_ref.set("CNXREFNAME", "Teradata FastExport Connection")
     conn_ref.set("CONNECTIONNAME", "TDW_FASTEXP")
+    conn_ref.set("CONNECTIONNUMBER", "1")
     conn_ref.set("CONNECTIONSUBTYPE", "Teradata FastExport Connection")
     conn_ref.set("CONNECTIONTYPE", "Application")
-    attribute = ET.SubElement(conn_ref, "ATTRIBUTE")
+    attribute = ET.SubElement(sess_extn, "ATTRIBUTE")
     attribute.set("NAME", "Temporary File Name")
-    attribute.set("VALUE", "$PMTempDir&#x5c;")
+    attribute.set("VALUE", "$PMTempDir\\")
 
     sess_extn = ET.SubElement(session, "SESSIONEXTENSION")
     sess_extn.set("NAME", "File Writer")
     sess_extn.set("SINSTANCENAME", ins_tgt.NAME)
     sess_extn.set("SUBTYPE", "File Writer")
     sess_extn.set("TRANSFORMATIONTYPE", ins_tgt.TRANSFORMATION_TYPE)
-    sess_extn.set("TYPE", "Writer")
+    sess_extn.set("TYPE", "WRITER")
     attribute = ET.SubElement(sess_extn, "ATTRIBUTE")
     attribute.set("NAME", "Output file directory")
     attribute.set("VALUE", "/informatica/paypal/data/IDI_RADD")
     attribute = ET.SubElement(sess_extn, "ATTRIBUTE")
     attribute.set("NAME", "Output filename")
-    attribute.set("VALUE", "lc_ctypes_RADD.txt")
+    attribute.set("VALUE", radd_name + ".txt")
 
     attribute = ET.SubElement(session, "ATTRIBUTE")
     attribute.set("NAME", "Write Backward Compatible Session Log File")
