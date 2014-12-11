@@ -168,31 +168,31 @@ class infaColumn(object):
     }
 
     td_trans_datatype_map = {
-        "BIGINT": "BIGINT",
-        "BYTE": "BINARY",
-        "BYTEINT": "SMALL INTEGER",
-        "CHAR": "STRING",
-        "DATE": "DATE/TIME",
-        "DECIMAL": "DECIMAL",
-        "FLOAT": "DOUBLE",
-        "INTEGER": "INTEGER",
-        "SMALLINT": "SMALL INTEGER",
-        "TIME": "DATE/TIME",
-        "TIMESTAMP": "DATE/TIME",
-        "VARBYTE": "BINARY",
-        "VARCHAR": "STRING"
+        "BIGINT": "bigint",
+        "BYTE": "binary",
+        "BYTEINT": "small integer",
+        "CHAR": "string",
+        "DATE": "date/time",
+        "DECIMAL": "decimal",
+        "FLOAT": "double",
+        "INTEGER": "integer",
+        "SMALLINT": "small integer",
+        "TIME": "date/time",
+        "TIMESTAMP": "date/time",
+        "VARBYTE": "binary",
+        "VARCHAR": "string"
     }
 
     trans_ff_datatype_map = {
-        "BIGINT": "BIGINT",
-        "DATE/TIME": "DATETIME",
-        "DOUBLE": "DOUBLE",
-        "INTEGER": "INT",
-        "NSTRING": "NSTRING",
-        "NTEXT": "NSTRING",
-        "SMALL INTEGER": "NUMBER",
-        "STRING": "STRING",
-        "TEXT": "STRING"
+        "bigint": "BIGINT",
+        "date/time": "DATETIME",
+        "double": "DOUBLE",
+        "integer": "INT",
+        "nstring": "NSTRING",
+        "ntext": "NSTRING",
+        "small integer": "NUMBER",
+        "string": "STRING",
+        "text": "STRING"
     }
 
     def __init__(self, TRANSFORMATIONTYPE = "Expression", \
@@ -257,14 +257,17 @@ class infaColumn(object):
         el = ET.Element(self.trans_type_element_tag_map[self.TRANSFORMATIONTYPE])
         el.attrib["DATATYPE"] = self.DATATYPE
         el.attrib["NAME"] = self.NAME
-        el.attrib["NULLABLE"] = self.NULLABLE
         el.attrib["PORTTYPE"] = self.PORTTYPE
         el.attrib["PRECISION"] = self.PRECISION
         el.attrib["SCALE"] = self.SCALE
 
+        if self.DATABASETYPE != "Transformation":
+            el.attrib["NULLABLE"] = self.NULLABLE
+
         if self.TRANSFORMATIONTYPE == "Expression":
             if self.PORTTYPE == "INPUT/OUTPUT" or self.PORTTYPE == "OUTPUT":
                 el.set("EXPRESSION", self.properties.get("EXPRESSION", ""))
+
         return el
 
     def toFlatFileSource(self):
@@ -306,7 +309,7 @@ class infaColumn(object):
 
         if new_col.DATATYPE.upper() == "SMALL INTEGER":
             new_col.PRECISION = "5"
-        if self.DATATYPE.upper() == "DATE/TIME":
+        if new_col.DATATYPE.upper() == "DATE/TIME":
             new_col.PRECISION = "29"
             new_col.SCALE = "9"
 
@@ -324,7 +327,7 @@ class infaColumn(object):
 
         if new_col.DATABASETYPE == "Flat File":
             new_col.DATATYPE = \
-                self.trans_ff_datatype_map.get(self.DATATYPE.upper(), "Unknown")
+                self.trans_ff_datatype_map.get(self.DATATYPE.lower(), "Unknown")
         elif new_col.DATABASETYPE == "Teradata":
             new_col.DATATYPE = self.DATATYPE
         else:
