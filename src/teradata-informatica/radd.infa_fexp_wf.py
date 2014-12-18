@@ -148,7 +148,7 @@ else:
 
     # build mapping
     mapping = ET.Element("MAPPING")
-    mapping.set("NAME", "m_" + radd_name)
+    mapping.set("NAME", "m_" + radd_name + "_RADD")
     ins_src = source.getInstance()
     ins_src.NAME = "src_" + source.NAME
     #print(xml.dom.minidom.parseString(ET.tostring(ins_src.getElement())).toprettyxml())
@@ -202,7 +202,7 @@ else:
 
     # build workflow
     workflow = ET.Element("WORKFLOW")
-    workflow.set("NAME", "wf_" + radd_name)
+    workflow.set("NAME", "wf_" + radd_name + "_RADD")
     workflow.set("REUSABLE_SCHEDULER", "NO")
     workflow.set("SCHEDULERNAME", "Scheduler")
 
@@ -282,7 +282,7 @@ else:
     attribute.set("VALUE", "/informatica/paypal/data/IDI_RADD")
     attribute = ET.SubElement(sess_extn, "ATTRIBUTE")
     attribute.set("NAME", "Output filename")
-    attribute.set("VALUE", radd_name + ".txt")
+    attribute.set("VALUE", radd_name + "_RADD.txt")
 
     attribute = ET.SubElement(session, "ATTRIBUTE")
     attribute.set("NAME", "Write Backward Compatible Session Log File")
@@ -336,7 +336,7 @@ else:
     folder.append(mapping)
     folder.append(workflow)
 
-    print(xml.dom.minidom.parseString(ET.tostring(root)).toprettyxml())
+    print(xml.dom.minidom.parseString(ET.tostring(root)).toprettyxml(indent = "  "))
 
 
 
