@@ -1,2 +1,3 @@
 venv
 src/teradata-informatica/modules/__pycache__
+resources/informatica/logs/*
